@@ -1,0 +1,97 @@
+<main class="min-h-screen bg-gray-900 flex flex-col items-center justify-center p-4 relative">
+  <div class="absolute top-4 right-4">
+    <app-language-switcher></app-language-switcher>
+  </div>
+  
+  <div class="w-full max-w-2xl bg-gray-800 rounded-2xl shadow-2xl p-6 md:p-8 transform transition-all duration-300">
+    
+    <!-- Header -->
+    <div class="text-center mb-8">
+      <h1 class="text-4xl md:text-5xl font-bold text-white tracking-tight">
+        <span class="text-sky-400">{{ 'TITLE_ACCENT' | translate }}</span> {{ 'TITLE' | translate }}
+      </h1>
+      <p class="text-gray-400 mt-2">{{ 'SUBTITLE' | translate }}</p>
+    </div>
+
+    <!-- Loading and Error States -->
+    @if (loading()) {
+      <div class="my-16">
+        <app-spinner></app-spinner>
+        <p class="text-center text-gray-400 mt-4">{{ 'LOADING_TEXT' | translate }}</p>
+      </div>
+    } @else if (error()) {
+      <div class="bg-red-900/50 border border-red-700 text-red-300 px-4 py-3 rounded-lg text-center" role="alert">
+        <strong class="font-bold">{{ 'ERROR_HEADING' | translate }}</strong>
+        <span class="block sm:inline">{{ error() }}</span>
+      </div>
+    } @else {
+      <!-- Main Converter UI -->
+      <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+        
+        <!-- From Amount -->
+        <div class="w-full">
+          <label for="fromAmount" class="block text-sm font-medium text-gray-400 mb-2">{{ 'AMOUNT' | translate }}</label>
+          <div class="flex">
+            <select
+              id="fromCurrency"
+              class="z-10 block w-36 flex-shrink-0 cursor-pointer appearance-none rounded-l-lg border border-gray-600 bg-gray-700 px-4 py-3 text-sm font-medium text-white hover:bg-gray-600 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+              [value]="fromCurrency()"
+              (change)="onFromCurrencyChange($event)">
+              @for (currency of currencies(); track currency.code) {
+                <option [value]="currency.code">{{ currency.flag }} {{ currency.code }}</option>
+              }
+            </select>
+            <input 
+              type="number" 
+              id="fromAmount"
+              class="relative z-0 block w-full min-w-0 flex-1 rounded-r-lg border border-gray-600 bg-gray-900 px-4 py-3 text-white placeholder-gray-500 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+              [value]="fromAmount()"
+              (input)="onFromAmountChange($event)"
+              placeholder="1.00">
+          </div>
+        </div>
+
+        <!-- Swap Button -->
+        <div class="flex-shrink-0 my-2 md:my-0">
+          <button (click)="swapCurrencies()" class="p-3 bg-gray-700 rounded-full hover:bg-sky-500 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-gray-800 transform md:rotate-90">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- To Amount (Result) -->
+        <div class="w-full">
+          <label for="toAmount" class="block text-sm font-medium text-gray-400 mb-2">{{ 'CONVERTED_AMOUNT' | translate }}</label>
+          <div class="flex">
+            <select 
+              id="toCurrency"
+              class="z-10 block w-36 flex-shrink-0 cursor-pointer appearance-none rounded-l-lg border border-gray-600 bg-gray-700 px-4 py-3 text-sm font-medium text-white hover:bg-gray-600 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+              [value]="toCurrency()"
+              (change)="onToCurrencyChange($event)">
+              @for (currency of currencies(); track currency.code) {
+                <option [value]="currency.code">{{ currency.flag }} {{ currency.code }}</option>
+              }
+            </select>
+            <input 
+              type="text" 
+              id="toAmount"
+              readonly
+              class="relative z-0 block w-full min-w-0 flex-1 rounded-r-lg border border-gray-600 bg-gray-900/50 px-4 py-3 text-white cursor-not-allowed"
+              [value]="convertedAmount() | number:'1.2-4'">
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Info -->
+      <div class="text-center text-gray-500 text-xs mt-8">
+        <p>
+          {{ 'RATE_PREFIX' | translate }} {{ fromCurrency() }} {{ 'RATE_EQUALS' | translate }}
+          {{ singleUnitRate() | number:'1.4-6' }} 
+          {{ toCurrency() }}
+        </p>
+        <p class="mt-1">{{ 'LAST_UPDATED' | translate }} {{ lastUpdated() | date:'medium' }}</p>
+      </div>
+    }
+  </div>
+</main>

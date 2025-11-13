@@ -1,0 +1,5 @@
+{
+  "name": "World Currency Converter",
+  "description": "A currency converter application that uses a free, live data API to provide daily exchange rates for various world currencies.",
+  "requestFramePermissions": []
+}
