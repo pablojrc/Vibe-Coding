@@ -2,13 +2,13 @@ import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { currencyNames } from '../data/currency-names';
-import { currencyFlags } from '../data/currency-flags';
+import { currencyCountryCodes } from '../data/currency-country-codes';
 
 export interface Currency {
   code: string;
   name: string;
   rate: number; // Rate against USD
-  flag?: string;
+  flagCode: string;
 }
 
 // Interface for the third-party API response structure
@@ -54,7 +54,7 @@ export class CurrencyService {
         code: code,
         name: currencyNames[code] || code, // Fallback to code if a full name isn't in our list
         rate: rates[code],
-        flag: currencyFlags[code] || '🏳️'
+        flagCode: currencyCountryCodes[code] || ''
       }));
 
       // Sort currencies by code for easier selection
@@ -87,7 +87,7 @@ export class CurrencyService {
 
     return fallbackData.map(c => ({
       ...c,
-      flag: currencyFlags[c.code] || '🏳️'
+      flagCode: currencyCountryCodes[c.code] || ''
     })).sort((a, b) => a.code.localeCompare(b.code));
   }
 }

@@ -31,9 +31,9 @@ export const translations: { [key: string]: { [key: string]: string } } = {
   },
   es: {
     TITLE_ACCENT: 'Conversor',
-    TITLE: 'mundial de divisas',
-    SUBTITLE: 'Tipos de cambio en vivo desde una fuente de datos real',
-    LOADING_TEXT: 'Obteniendo las últimas tasas de mercado...',
+    TITLE: 'de divisas internacionales',
+    SUBTITLE: 'Tipos de cambio en tiempo real',
+    LOADING_TEXT: 'Obteniendo las últimas tasas del mercado...',
     ERROR_HEADING: 'Error:',
     AMOUNT: 'Cantidad',
     CONVERTED_AMOUNT: 'Cantidad Convertida',
