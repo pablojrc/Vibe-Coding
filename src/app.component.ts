@@ -26,6 +26,8 @@ export class AppComponent implements OnInit {
   languageService = inject(LanguageService);
   private elementRef = inject(ElementRef);
 
+  private readonly REFRESH_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
+
 
   // --- Signals for State Management ---
   currencies: WritableSignal<Currency[]> = signal([]);
@@ -49,6 +51,9 @@ export class AppComponent implements OnInit {
     this.currencies().find(c => c.code === this.toCurrency())
   );
   
+  formattedFromAmount: Signal<string> = computed(() => this.formatAmount(this.fromAmount()));
+  formattedToAmount: Signal<string> = computed(() => this.formatAmount(this.toAmount()));
+
   singleUnitRate: Signal<number> = computed(() => {
     const rates = this.currencies();
     if (rates.length === 0) return 0;
@@ -109,6 +114,11 @@ export class AppComponent implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
+    await this.loadInitialData();
+    setInterval(() => this.refreshRates(), this.REFRESH_INTERVAL_MS);
+  }
+
+  private async loadInitialData(): Promise<void> {
     this.loading.set(true);
     this.error.set(null);
     try {
@@ -147,6 +157,33 @@ export class AppComponent implements OnInit {
     } finally {
       this.loading.set(false);
     }
+  }
+
+  private async refreshRates(): Promise<void> {
+    try {
+      const rates = await this.currencyService.getRates();
+      this.currencies.set(rates);
+      this.lastUpdated.set(new Date());
+      this.updateToAmount(); // Recalculate with new rates
+    } catch (err) {
+      console.error('Failed to auto-refresh currency rates:', err);
+    }
+  }
+
+  private formatAmount(amount: number): string {
+    // Using 'en-US' locale to guarantee '.' for decimal and ',' for thousands.
+    if (amount !== 0 && Math.abs(amount) < 1) {
+      return new Intl.NumberFormat('en-US', {
+        useGrouping: true,
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 12,
+      }).format(amount);
+    }
+    return new Intl.NumberFormat('en-US', {
+      useGrouping: true,
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 4,
+    }).format(amount);
   }
 
   private updateToAmount(): void {
@@ -192,13 +229,15 @@ export class AppComponent implements OnInit {
 
   onFromAmountChange(event: Event): void {
     const value = (event.target as HTMLInputElement).value;
-    this.fromAmount.set(parseFloat(value) || 0);
+    const sanitizedValue = value.replace(/,/g, '');
+    this.fromAmount.set(parseFloat(sanitizedValue) || 0);
     this.updateToAmount();
   }
 
   onToAmountChange(event: Event): void {
     const value = (event.target as HTMLInputElement).value;
-    this.toAmount.set(parseFloat(value) || 0);
+    const sanitizedValue = value.replace(/,/g, '');
+    this.toAmount.set(parseFloat(sanitizedValue) || 0);
     this.updateFromAmount();
   }
 

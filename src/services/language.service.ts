@@ -86,7 +86,7 @@ export class LanguageService {
   });
 
   init() {
-    this.browserLang = navigator.language.split('-')[0];
+    this.browserLang = (navigator.language || 'en').split('-')[0];
     const savedLang = this.persistenceService.getItem<string>('userLanguage');
     const initialLang = savedLang || this.browserLang;
     this.setLanguage(ALL_LANGUAGES.some(l => l.code === initialLang) ? initialLang : 'en');

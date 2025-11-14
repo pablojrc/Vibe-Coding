@@ -66,10 +66,11 @@
                   </svg>
                 </button>
                 <input 
-                  type="number" 
+                  type="text"
+                  inputmode="decimal"
                   id="fromAmount"
-                  class="relative z-0 block w-full min-w-0 flex-1 rounded-e-lg border border-gray-600 bg-gray-900 px-3 py-2.5 text-white placeholder-gray-500 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                  [value]="fromAmount()"
+                  class="relative z-0 block w-full min-w-0 flex-1 rounded-e-lg border border-gray-600 bg-gray-900 px-3 py-2.5 text-white placeholder-gray-500 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 text-right"
+                  [value]="formattedFromAmount()"
                   (input)="onFromAmountChange($event)"
                   placeholder="1.00">
               </div>
@@ -136,10 +137,11 @@
                   </svg>
                 </button>
                 <input 
-                  type="number" 
+                  type="text"
+                  inputmode="decimal"
                   id="toAmount"
-                  class="relative z-0 block w-full min-w-0 flex-1 rounded-e-lg border border-gray-600 bg-gray-900 px-3 py-2.5 text-white placeholder-gray-500 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                  [value]="toAmount()"
+                  class="relative z-0 block w-full min-w-0 flex-1 rounded-e-lg border border-gray-600 bg-gray-900 px-3 py-2.5 text-white placeholder-gray-500 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 text-right"
+                  [value]="formattedToAmount()"
                   (input)="onToAmountChange($event)">
               </div>
                <!-- Dropdown Menu -->
@@ -175,7 +177,7 @@
       <div class="text-center text-gray-500 text-xs mt-8">
         <p>
           {{ 'RATE_PREFIX' | translate }} {{ fromCurrency() }} {{ 'RATE_EQUALS' | translate }}
-          {{ singleUnitRate() | number:'1.4-6' }} 
+          {{ singleUnitRate() | number:'1.4-6':languageService.currentLocaleId() }} 
           {{ toCurrency() }}
         </p>
         <p class="mt-1">{{ 'LAST_UPDATED' | translate }} {{ lastUpdated() | date:'medium':'':languageService.currentLocaleId() }}</p>
