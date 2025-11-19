@@ -5,36 +5,38 @@ import { PersistenceService } from './persistence.service';
 export interface Language {
   code: string;
   nameKey: string;
+  nativeName: string; // The name of the language in its own script
   flagCode: string;
   localeId: string; // The corresponding locale ID for Angular pipes
 }
 
 export interface TranslatedLanguage {
   code: string;
-  name: string; // This will hold the translated name
+  nativeName: string; // e.g., 'Español'
+  translatedName: string; // e.g., 'Spanish' (if current language is English)
   flagCode: string;
   localeId: string;
 }
 
 const ALL_LANGUAGES: Language[] = [
-  { code: 'en', nameKey: 'LANG_EN', flagCode: 'gb', localeId: 'en' },
-  { code: 'es', nameKey: 'LANG_ES', flagCode: 'es', localeId: 'es' },
-  { code: 'fr', nameKey: 'LANG_FR', flagCode: 'fr', localeId: 'fr' },
-  { code: 'de', nameKey: 'LANG_DE', flagCode: 'de', localeId: 'de' },
-  { code: 'pt', nameKey: 'LANG_PT', flagCode: 'pt', localeId: 'pt' },
-  { code: 'it', nameKey: 'LANG_IT', flagCode: 'it', localeId: 'it' },
-  { code: 'ht', nameKey: 'LANG_HT', flagCode: 'ht', localeId: 'fr' }, // Fallback to French
-  { code: 'la', nameKey: 'LANG_LA', flagCode: 'va', localeId: 'en' }, // Fallback to English
-  { code: 'ru', nameKey: 'LANG_RU', flagCode: 'ru', localeId: 'ru' },
-  { code: 'tr', nameKey: 'LANG_TR', flagCode: 'tr', localeId: 'tr' },
-  { code: 'zh', nameKey: 'LANG_ZH', flagCode: 'cn', localeId: 'zh' },
-  { code: 'yue', nameKey: 'LANG_YUE', flagCode: 'hk', localeId: 'zh-Hant' }, // Use Traditional Chinese
-  { code: 'ja', nameKey: 'LANG_JA', flagCode: 'jp', localeId: 'ja' },
-  { code: 'ar', nameKey: 'LANG_AR', flagCode: 'sa', localeId: 'ar' },
-  { code: 'hi', nameKey: 'LANG_HI', flagCode: 'in', localeId: 'hi' },
-  { code: 'ur', nameKey: 'LANG_UR', flagCode: 'pk', localeId: 'ur' },
-  { code: 'fa', nameKey: 'LANG_FA', flagCode: 'ir', localeId: 'fa' },
-  { code: 'ta', nameKey: 'LANG_TA', flagCode: 'in', localeId: 'ta' },
+  { code: 'en', nameKey: 'LANG_EN', nativeName: 'English', flagCode: 'gb', localeId: 'en' },
+  { code: 'es', nameKey: 'LANG_ES', nativeName: 'Español', flagCode: 'es', localeId: 'es' },
+  { code: 'fr', nameKey: 'LANG_FR', nativeName: 'Français', flagCode: 'fr', localeId: 'fr' },
+  { code: 'de', nameKey: 'LANG_DE', nativeName: 'Deutsch', flagCode: 'de', localeId: 'de' },
+  { code: 'pt', nameKey: 'LANG_PT', nativeName: 'Português', flagCode: 'pt', localeId: 'pt' },
+  { code: 'it', nameKey: 'LANG_IT', nativeName: 'Italiano', flagCode: 'it', localeId: 'it' },
+  { code: 'ht', nameKey: 'LANG_HT', nativeName: 'Kreyòl ayisyen', flagCode: 'ht', localeId: 'fr' },
+  { code: 'la', nameKey: 'LANG_LA', nativeName: 'Latina', flagCode: 'va', localeId: 'en' },
+  { code: 'ru', nameKey: 'LANG_RU', nativeName: 'Русский', flagCode: 'ru', localeId: 'ru' },
+  { code: 'tr', nameKey: 'LANG_TR', nativeName: 'Türkçe', flagCode: 'tr', localeId: 'tr' },
+  { code: 'zh', nameKey: 'LANG_ZH', nativeName: '中文', flagCode: 'cn', localeId: 'zh' },
+  { code: 'yue', nameKey: 'LANG_YUE', nativeName: '廣東話', flagCode: 'hk', localeId: 'zh-Hant' },
+  { code: 'ja', nameKey: 'LANG_JA', nativeName: '日本語', flagCode: 'jp', localeId: 'ja' },
+  { code: 'ar', nameKey: 'LANG_AR', nativeName: 'العربية', flagCode: 'sa', localeId: 'ar' },
+  { code: 'hi', nameKey: 'LANG_HI', nativeName: 'हिन्दी', flagCode: 'in', localeId: 'hi' },
+  { code: 'ur', nameKey: 'LANG_UR', nativeName: 'اردو', flagCode: 'pk', localeId: 'ur' },
+  { code: 'fa', nameKey: 'LANG_FA', nativeName: 'فارسی', flagCode: 'ir', localeId: 'fa' },
+  { code: 'ta', nameKey: 'LANG_TA', nativeName: 'தமிழ்', flagCode: 'in', localeId: 'ta' },
 ];
 
 const RTL_LANGUAGES = ['ar', 'ur', 'fa'];
@@ -61,10 +63,11 @@ export class LanguageService {
   availableLanguages: Signal<TranslatedLanguage[]> = computed(() => {
       const currentCode = this.currentLanguageCode();
 
-      // Create a new array of objects with names translated to the current language
-      const allTranslated = ALL_LANGUAGES.map(lang => ({
+      // Create a new array of objects with both native and translated names
+      const allTranslated: TranslatedLanguage[] = ALL_LANGUAGES.map(lang => ({
         code: lang.code,
-        name: this.translate(lang.nameKey),
+        nativeName: lang.nativeName,
+        translatedName: this.translate(lang.nameKey),
         flagCode: lang.flagCode,
         localeId: lang.localeId,
       }));
@@ -74,7 +77,7 @@ export class LanguageService {
       
       const otherLangs = allTranslated
           .filter(l => l.code !== this.browserLang && l.code !== 'en')
-          .sort((a, b) => a.name.localeCompare(b.name, currentCode));
+          .sort((a, b) => a.translatedName.localeCompare(b.translatedName, currentCode));
 
       const sortedList: TranslatedLanguage[] = [];
       if (localLang) sortedList.push(localLang);

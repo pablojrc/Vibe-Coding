@@ -21,6 +21,7 @@ import { ThemeService } from '../../services/theme.service';
             @for(lang of languageService.availableLanguages(); track lang.code) {
               <a 
                 href="#"
+                [title]="lang.translatedName"
                 class="flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-gray-900 dark:hover:text-white"
                 [class.themed-bg-selected]="lang.code === languageService.currentLanguageCode()"
                 [class.text-white]="lang.code === languageService.currentLanguageCode()"
@@ -28,10 +29,10 @@ import { ThemeService } from '../../services/theme.service';
                 (click)="selectLanguage(lang.code, $event)">
                 <img 
                   [src]="'https://flagcdn.com/w40/' + lang.flagCode + '.png'" 
-                  [alt]="lang.name" 
+                  [alt]="lang.nativeName" 
                   class="w-5 h-5 me-3 object-contain"
                 />
-                <span>{{ lang.name }}</span>
+                <span>{{ lang.nativeName }}</span>
               </a>
             }
           </div>

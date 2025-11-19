@@ -33,6 +33,47 @@ export class LocationService {
     'za': 'ZAR', 'zm': 'ZMW', 'zw': 'ZWL'
   };
 
+  /**
+   * Attempts to determine the user's currency based on their physical location.
+   * Returns a currency code (e.g., 'GBP') or null if it fails or is denied.
+   */
+  async getCurrencyFromGeolocation(): Promise<string | null> {
+    if (!('geolocation' in navigator)) {
+      return null;
+    }
+
+    return new Promise((resolve) => {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          // Use a free reverse geocoding API to get country from coordinates
+          try {
+            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+            if (!response.ok) {
+                resolve(null);
+                return;
+            }
+            const data = await response.json();
+            const countryCode = data?.address?.country_code?.toLowerCase();
+            if (countryCode && this.localeToCurrencyMap[countryCode]) {
+              resolve(this.localeToCurrencyMap[countryCode]);
+            } else {
+              resolve(null);
+            }
+          } catch (error) {
+            console.error('Reverse geocoding failed', error);
+            resolve(null);
+          }
+        },
+        (error) => {
+          console.warn(`Geolocation error: ${error.message}`);
+          resolve(null); // Permission denied or other error
+        },
+        { timeout: 5000 } // Give up after 5 seconds
+      );
+    });
+  }
+
   getUserCurrency(): string {
     try {
       const userLang = navigator.language; // e.g., 'en-US' or 'es-ES'

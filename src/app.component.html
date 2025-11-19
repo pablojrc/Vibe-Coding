@@ -81,24 +81,34 @@
 
               <!-- Dropdown Menu -->
               @if (fromDropdownOpen()) {
-                <div class="origin-top-start absolute start-0 mt-2 w-72 rounded-md shadow-lg bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 focus:outline-none z-50 max-h-48 md:max-h-60 overflow-y-auto" #fromDropdownPanel>
-                  <div class="py-1" role="menu" aria-orientation="vertical">
-                    @for(currency of currencies(); track currency.code) {
-                      <a 
-                        href="#"
-                        class="flex items-center px-4 py-1 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-gray-900 dark:hover:text-white"
+                <div 
+                  class="origin-top-start absolute start-0 mt-2 w-72 rounded-md shadow-lg bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 focus:outline-none z-50 max-h-48 md:max-h-60 overflow-y-auto" 
+                  #fromDropdownPanel 
+                  tabindex="-1" 
+                  role="listbox" 
+                  (keydown)="handleDropdownKeyDown($event, 'from')">
+                  <div class="py-1" role="presentation">
+                    @for(currency of translatedCurrencies(); track currency.code; let i = $index) {
+                      <div
+                        #fromCurrencyItem
+                        [id]="'from-option-' + i"
+                        role="option"
+                        [attr.aria-selected]="currency.code === fromCurrency()"
+                        class="flex items-center px-4 py-1 text-sm text-gray-700 dark:text-gray-200 cursor-pointer"
                         [class.themed-bg-selected]="currency.code === fromCurrency()"
                         [class.text-white]="currency.code === fromCurrency()"
-                        role="menuitem"
-                        (click)="selectFromCurrency(currency.code, $event)">
+                        [class.bg-gray-100]="i === fromDropdownActiveIndex() && currency.code !== fromCurrency()"
+                        [class.dark:bg-gray-600]="i === fromDropdownActiveIndex() && currency.code !== fromCurrency()"
+                        (click)="selectFromCurrency(currency.code)"
+                        (mouseenter)="fromDropdownActiveIndex.set(i)">
                         @if (currency.flagCode) {
                           <img [src]="'https://flagcdn.com/w40/' + currency.flagCode + '.png'" [alt]="currency.code" class="w-6 h-auto me-3 object-contain"/>
                         } @else {
                           <div class="w-6 h-5 me-3 flex-shrink-0 flex items-center justify-center bg-gray-500 dark:bg-gray-600 text-xs text-white">?</div>
                         }
                         <span class="font-medium">{{ currency.code }}</span>
-                        <span class="text-gray-500 dark:text-gray-400 ms-2 truncate">{{ currency.name }}</span>
-                      </a>
+                        <span class="text-gray-500 dark:text-gray-400 ms-2 truncate">{{ currency.translatedName }}</span>
+                      </div>
                     }
                   </div>
                 </div>
@@ -155,24 +165,34 @@
               </div>
                <!-- Dropdown Menu -->
               @if (toDropdownOpen()) {
-                <div class="origin-top-start absolute start-0 mt-2 w-72 rounded-md shadow-lg bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 focus:outline-none z-50 max-h-48 md:max-h-60 overflow-y-auto" #toDropdownPanel>
-                  <div class="py-1" role="menu" aria-orientation="vertical">
-                    @for(currency of currencies(); track currency.code) {
-                      <a 
-                        href="#"
-                        class="flex items-center px-4 py-1 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-gray-900 dark:hover:text-white"
+                <div 
+                  class="origin-top-start absolute start-0 mt-2 w-72 rounded-md shadow-lg bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 focus:outline-none z-50 max-h-48 md:max-h-60 overflow-y-auto" 
+                  #toDropdownPanel 
+                  tabindex="-1" 
+                  role="listbox" 
+                  (keydown)="handleDropdownKeyDown($event, 'to')">
+                  <div class="py-1" role="presentation">
+                    @for(currency of translatedCurrencies(); track currency.code; let i = $index) {
+                      <div 
+                        #toCurrencyItem
+                        [id]="'to-option-' + i"
+                        role="option"
+                        [attr.aria-selected]="currency.code === toCurrency()"
+                        class="flex items-center px-4 py-1 text-sm text-gray-700 dark:text-gray-200 cursor-pointer"
                         [class.themed-bg-selected]="currency.code === toCurrency()"
                         [class.text-white]="currency.code === toCurrency()"
-                        role="menuitem"
-                        (click)="selectToCurrency(currency.code, $event)">
+                        [class.bg-gray-100]="i === toDropdownActiveIndex() && currency.code !== toCurrency()"
+                        [class.dark:bg-gray-600]="i === toDropdownActiveIndex() && currency.code !== toCurrency()"
+                        (click)="selectToCurrency(currency.code)"
+                        (mouseenter)="toDropdownActiveIndex.set(i)">
                         @if (currency.flagCode) {
                           <img [src]="'https://flagcdn.com/w40/' + currency.flagCode + '.png'" [alt]="currency.code" class="w-6 h-auto me-3 object-contain"/>
                         } @else {
                           <div class="w-6 h-5 me-3 flex-shrink-0 flex items-center justify-center bg-gray-500 dark:bg-gray-600 text-xs text-white">?</div>
                         }
                         <span class="font-medium">{{ currency.code }}</span>
-                        <span class="text-gray-500 dark:text-gray-400 ms-2 truncate">{{ currency.name }}</span>
-                      </a>
+                        <span class="text-gray-500 dark:text-gray-400 ms-2 truncate">{{ currency.translatedName }}</span>
+                      </div>
                     }
                   </div>
                 </div>

@@ -1,4 +1,4 @@
-import { Component, OnInit, ChangeDetectionStrategy, signal, computed, inject, WritableSignal, Signal, effect, ElementRef, ViewChild } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, signal, computed, inject, WritableSignal, Signal, effect, ElementRef, ViewChild, ViewChildren, QueryList } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
 import { CurrencyService, Currency } from './services/currency.service';
@@ -10,6 +10,10 @@ import { SpinnerComponent } from './components/spinner/spinner.component';
 import { LanguageSwitcherComponent } from './components/language-switcher/language-switcher.component';
 import { TranslatePipe } from './pipes/translate.pipe';
 
+// Extends the base Currency interface with a translated name for display purposes.
+interface DisplayCurrency extends Currency {
+  translatedName: string;
+}
 
 @Component({
   selector: 'app-root',
@@ -31,7 +35,7 @@ export class AppComponent implements OnInit {
   private readonly REFRESH_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
 
 
-  // --- Element References for Click Outside Logic ---
+  // --- Element References for Click Outside & Focus Logic ---
   @ViewChild('fromDropdownTrigger') fromDropdownTrigger?: ElementRef;
   @ViewChild('fromDropdownPanel') fromDropdownPanel?: ElementRef;
   @ViewChild('toDropdownTrigger') toDropdownTrigger?: ElementRef;
@@ -40,6 +44,8 @@ export class AppComponent implements OnInit {
   @ViewChild('settingsPanel') settingsPanel?: ElementRef;
   @ViewChild('shortcutsButton') shortcutsButton?: ElementRef;
   @ViewChild('shortcutsPanel') shortcutsPanel?: ElementRef;
+  @ViewChildren('fromCurrencyItem') fromCurrencyItems?: QueryList<ElementRef>;
+  @ViewChildren('toCurrencyItem') toCurrencyItems?: QueryList<ElementRef>;
 
 
   // --- Signals for State Management ---
@@ -60,6 +66,8 @@ export class AppComponent implements OnInit {
   toDropdownOpen = signal(false);
   isSettingsOpen = signal(false);
   isShortcutsOpen = signal(false);
+  fromDropdownActiveIndex = signal<number | null>(null);
+  toDropdownActiveIndex = signal<number | null>(null);
 
   // --- Formatting & Locale Signals ---
   formattingLocale: WritableSignal<string | null> = signal(this.persistenceService.getItem('userFormattingLocale'));
@@ -67,6 +75,24 @@ export class AppComponent implements OnInit {
 
 
   // --- Computed Signals for Derived State ---
+  translatedCurrencies: Signal<DisplayCurrency[]> = computed(() => {
+    const lang = this.languageService.currentLanguageCode();
+    const displayNames = new Intl.DisplayNames([lang], { type: 'currency' });
+
+    return this.currencies().map(currency => {
+      let translatedName = currency.name; // Fallback to English name
+      try {
+        // Use Intl.DisplayNames for proper, localized currency names
+        const name = displayNames.of(currency.code);
+        // Some codes might not have a translation, so we check for that
+        translatedName = (name && name !== currency.code) ? name : currency.name;
+      } catch (e) {
+        // Keep fallback name if Intl.DisplayNames fails for a code
+      }
+      return { ...currency, translatedName };
+    });
+  });
+
   fromCurrencyData: Signal<Currency | undefined> = computed(() => 
     this.currencies().find(c => c.code === this.fromCurrency())
   );
@@ -177,8 +203,18 @@ export class AppComponent implements OnInit {
         initialFrom = savedCurrencies.from;
         initialTo = savedCurrencies.to;
       } else {
-        const userCurrency = this.locationService.getUserCurrency();
-        if (allCodes.has(userCurrency) && userCurrency !== 'USD') {
+        // Attempt to set currency based on geolocation first, then fall back to locale.
+        const geoCurrency = await this.locationService.getCurrencyFromGeolocation();
+        let userCurrency: string | null = null;
+        
+        if (geoCurrency && allCodes.has(geoCurrency)) {
+            userCurrency = geoCurrency;
+        } else {
+            // Fallback to locale-based currency
+            userCurrency = this.locationService.getUserCurrency();
+        }
+        
+        if (userCurrency && allCodes.has(userCurrency) && userCurrency !== 'USD') {
             initialTo = userCurrency;
         }
       }
@@ -357,30 +393,60 @@ export class AppComponent implements OnInit {
 
   toggleFromDropdown(): void {
     this.toDropdownOpen.set(false);
-    this.fromDropdownOpen.update(v => !v);
+    this.toDropdownActiveIndex.set(null); // Reset other dropdown
+    this.fromDropdownOpen.update(v => {
+      const isOpen = !v;
+      if (isOpen) {
+        // Defer updates to wait for the DOM to render the list
+        setTimeout(() => {
+          const currentIndex = this.currencies().findIndex(c => c.code === this.fromCurrency());
+          this.fromDropdownActiveIndex.set(currentIndex !== -1 ? currentIndex : 0);
+          this.fromDropdownPanel?.nativeElement.focus();
+          this.scrollActiveItemIntoView('from');
+        }, 0);
+      } else {
+        this.fromDropdownActiveIndex.set(null);
+      }
+      return isOpen;
+    });
   }
 
   toggleToDropdown(): void {
     this.fromDropdownOpen.set(false);
-    this.toDropdownOpen.update(v => !v);
+    this.fromDropdownActiveIndex.set(null); // Reset other dropdown
+    this.toDropdownOpen.update(v => {
+      const isOpen = !v;
+      if (isOpen) {
+        // Defer updates to wait for the DOM to render the list
+        setTimeout(() => {
+          const currentIndex = this.currencies().findIndex(c => c.code === this.toCurrency());
+          this.toDropdownActiveIndex.set(currentIndex !== -1 ? currentIndex : 0);
+          this.toDropdownPanel?.nativeElement.focus();
+          this.scrollActiveItemIntoView('to');
+        }, 0);
+      } else {
+        this.toDropdownActiveIndex.set(null);
+      }
+      return isOpen;
+    });
   }
 
-  selectFromCurrency(code: string, event: MouseEvent): void {
-    event.preventDefault();
+  selectFromCurrency(code: string): void {
     if (this.fromCurrency() !== code) {
       this.fromCurrency.set(code);
       this.updateToAmount();
     }
     this.fromDropdownOpen.set(false);
+    this.fromDropdownTrigger?.nativeElement.focus();
   }
 
-  selectToCurrency(code: string, event: MouseEvent): void {
-    event.preventDefault();
+  selectToCurrency(code: string): void {
     if (this.toCurrency() !== code) {
       this.toCurrency.set(code);
       this.updateToAmount();
     }
     this.toDropdownOpen.set(false);
+    this.toDropdownTrigger?.nativeElement.focus();
   }
 
   onClickOutside(event: Event): void {
@@ -413,6 +479,72 @@ export class AppComponent implements OnInit {
     this.fromCurrency.set(currentTo);
     this.toCurrency.set(currentFrom);
     this.updateToAmount();
+  }
+
+  handleDropdownKeyDown(event: KeyboardEvent, type: 'from' | 'to'): void {
+    const items = this.currencies();
+    if (items.length === 0) return;
+
+    const activeIndexSignal = type === 'from' ? this.fromDropdownActiveIndex : this.toDropdownActiveIndex;
+    const openSignal = type === 'from' ? this.fromDropdownOpen : this.toDropdownOpen;
+    const triggerEl = type === 'from' ? this.fromDropdownTrigger : this.toDropdownTrigger;
+    
+    let currentIndex = activeIndexSignal() ?? -1;
+
+    // Prevent page scroll for keys that we handle
+    if (['ArrowDown', 'ArrowUp', 'Home', 'End', ' '].includes(event.key)) {
+      event.preventDefault();
+    }
+
+    switch (event.key) {
+        case 'ArrowDown':
+            currentIndex = (currentIndex + 1) % items.length;
+            break;
+        case 'ArrowUp':
+            currentIndex = (currentIndex - 1 + items.length) % items.length;
+            break;
+        case 'Home':
+            currentIndex = 0;
+            break;
+        case 'End':
+            currentIndex = items.length - 1;
+            break;
+        case 'Enter':
+        case ' ':
+            if (currentIndex !== -1) {
+                const selectedCurrency = items[currentIndex];
+                if (type === 'from') {
+                    this.selectFromCurrency(selectedCurrency.code);
+                } else {
+                    this.selectToCurrency(selectedCurrency.code);
+                }
+            }
+            return;
+        case 'Escape':
+            openSignal.set(false);
+            triggerEl?.nativeElement.focus();
+            return;
+        case 'Tab':
+             openSignal.set(false);
+             // Allow default tab behavior to continue
+             return;
+        default:
+            return;
+    }
+    
+    activeIndexSignal.set(currentIndex);
+    this.scrollActiveItemIntoView(type);
+  }
+
+  private scrollActiveItemIntoView(type: 'from' | 'to'): void {
+    const activeIndex = type === 'from' ? this.fromDropdownActiveIndex() : this.toDropdownActiveIndex();
+    if (activeIndex === null) return;
+
+    const items = type === 'from' ? this.fromCurrencyItems : this.toCurrencyItems;
+    const element = items?.get(activeIndex)?.nativeElement;
+    if (element) {
+      element.scrollIntoView({ block: 'nearest' });
+    }
   }
 
   handleKeyboardShortcuts(event: KeyboardEvent): void {
