@@ -1,6 +1,6 @@
 # World Currency Converter
 
-![World Currency Converter Main Image](https://i.imgur.com/7vYf7Bq.png)
+![World Currency Converter Main Image](https://i.imgur.com/C5wB3m5.png)
 
 A modern, fast, and feature-rich currency converter application built with Angular. It uses a live data API to provide daily exchange rates, supports multiple languages, and offers extensive customization options for a personalized user experience.
 
@@ -532,7 +532,7 @@ A **Pablo Rodríguez** ex Republica Dominicana elaboratum.
 *   **لچکدار نمبر فارمیٹ**: امریکی طرز (`1,234.56`) اور یورپی طرز (`1.234,56`) کے نمبر فارمیٹس کے درمیان انتخاب کریں، یا اسے اپنی منتخب زبان کے مطابق خود بخود ڈھالنے دیں۔
 *   **مکمل کی بورڈ تک رسائی**: ڈراپ ڈاؤن سمیت پوری ایپ کو صرف اپنے کی بورڈ کا استعمال کرتے ہوئے نیویگیٹ کریں۔
 *   **طاقتور کی بورڈ شارٹ کٹس**: عام کارروائیوں کے لیے بدیہی شارٹ کٹس کے ساتھ اپنے ورک فلو کو تیز کریں۔
-*   **مستقل ترتیبات**: منتخب کردہ کرنسیوں، رقم، تھیم، اور زبان سمیت آپ کی تمام ترجیحات آپ کے اگلے دورے کے لیے محفوظ ہوجاتی ہیں۔
+*   **مستقل ترتیبات**: منتخب کردہ کرنسیوں، رقم، تھیم، اور زبان سمیت آپ کی تمام ترجیحات آپ کے अगले دورے کے لیے محفوظ ہوجاتی ہیں۔
 
 ### ⌨️ کی بورڈ شارٹ کٹس
 

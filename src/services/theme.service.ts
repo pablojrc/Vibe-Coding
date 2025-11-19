@@ -12,7 +12,7 @@ export class ThemeService {
   private styleElement: HTMLStyleElement | null = null;
 
   themes: Theme[] = THEMES;
-  currentThemeKey: WritableSignal<string> = signal('sky');
+  currentThemeKey: WritableSignal<string> = signal('violet');
 
   // The user's explicit selection: 'light', 'dark', or 'auto'
   displayMode: WritableSignal<DisplayMode> = signal('auto');
@@ -60,7 +60,7 @@ export class ThemeService {
     if (savedTheme && this.themes.some(t => t.key === savedTheme)) {
       this.setTheme(savedTheme);
     } else {
-      this.setTheme('sky'); // Default theme
+      this.setTheme('violet'); // Default theme
     }
 
     // Display mode persistence

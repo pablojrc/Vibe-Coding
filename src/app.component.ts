@@ -214,8 +214,9 @@ export class AppComponent implements OnInit {
             userCurrency = this.locationService.getUserCurrency();
         }
         
-        if (userCurrency && allCodes.has(userCurrency) && userCurrency !== 'USD') {
-            initialTo = userCurrency;
+        if (userCurrency && allCodes.has(userCurrency)) {
+          initialFrom = userCurrency;
+          initialTo = userCurrency === 'USD' ? 'EUR' : 'USD';
         }
       }
 
