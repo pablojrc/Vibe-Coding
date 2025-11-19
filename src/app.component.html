@@ -1,26 +1,26 @@
-<main class="min-h-screen bg-gray-900 flex flex-col items-center justify-center p-4 relative">
+<main class="min-h-screen bg-gray-100 dark:bg-gray-900 flex flex-col items-center justify-center p-4 relative transition-colors duration-300">
   <div class="absolute top-4 end-4 z-20">
     <app-language-switcher></app-language-switcher>
   </div>
   
-  <div class="w-full max-w-2xl bg-gray-800 rounded-2xl shadow-2xl p-6 md:p-8 transform transition-all duration-300">
+  <div class="w-full max-w-2xl bg-white dark:bg-gray-800 rounded-2xl shadow-xl dark:shadow-2xl p-6 md:p-8 transform transition-all duration-300 relative" [style.--theme-accent]="themeService.currentTheme().colors.accent" [style.--theme-ring]="themeService.currentTheme().colors.ring">
     
     <!-- Header -->
     <div class="text-center mb-6">
-      <h1 class="text-4xl md:text-5xl font-bold text-white tracking-tight">
-        <span class="text-sky-400">{{ 'TITLE_ACCENT' | translate }}</span> {{ 'TITLE' | translate }}
+      <h1 class="text-4xl md:text-5xl font-bold text-gray-900 dark:text-white tracking-tight">
+        <span [style.color]="'var(--theme-accent)'">{{ 'TITLE_ACCENT' | translate }}</span> {{ 'TITLE' | translate }}
       </h1>
-      <p class="text-gray-400 mt-2">{{ 'SUBTITLE' | translate }}</p>
+      <p class="text-gray-500 dark:text-gray-400 mt-2">{{ 'SUBTITLE' | translate }}</p>
     </div>
 
     <!-- Loading and Error States -->
     @if (loading()) {
       <div class="my-16">
         <app-spinner></app-spinner>
-        <p class="text-center text-gray-400 mt-4">{{ 'LOADING_TEXT' | translate }}</p>
+        <p class="text-center text-gray-500 dark:text-gray-400 mt-4">{{ 'LOADING_TEXT' | translate }}</p>
       </div>
     } @else if (error()) {
-      <div class="bg-red-900/50 border border-red-700 text-red-300 px-4 py-3 rounded-lg text-center" role="alert">
+      <div class="bg-red-100 dark:bg-red-900/50 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg text-center" role="alert">
         <strong class="font-bold">{{ 'ERROR_HEADING' | translate }}</strong>
         <span class="block sm:inline">{{ error() }}</span>
       </div>
@@ -30,8 +30,8 @@
         
         <!-- Swap Button (Mobile) -->
         <div class="md:hidden flex-shrink-0 flex items-center">
-          <button (click)="swapCurrencies()" class="p-3 bg-gray-700 rounded-full hover:bg-sky-500 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-gray-800">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <button (click)="swapCurrencies()" class="p-3 bg-gray-200 dark:bg-gray-700 rounded-full themed-bg-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-800" [style.--tw-ring-color]="'var(--theme-ring)'">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-600 dark:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
             </svg>
           </button>
@@ -42,26 +42,28 @@
           
           <!-- From Amount -->
           <div class="w-full">
-            <label for="fromAmount" class="block text-sm font-medium text-gray-400 mb-1.5">{{ 'AMOUNT' | translate }}</label>
+            <label for="fromAmount" class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1.5">{{ 'AMOUNT' | translate }}</label>
             <div class="relative">
               <div class="flex">
                 <!-- Custom Currency Dropdown Button -->
                 <button 
                   type="button" 
                   (click)="toggleFromDropdown()"
-                  class="z-10 flex items-center justify-between w-28 flex-shrink-0 cursor-pointer appearance-none rounded-s-lg border border-gray-600 bg-gray-700 px-3 py-2.5 text-sm font-medium text-white hover:bg-gray-600 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                  aria-haspopup="true" [attr.aria-expanded]="fromDropdownOpen()">
+                  class="z-10 flex items-center justify-between w-28 flex-shrink-0 cursor-pointer appearance-none rounded-s-lg border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 px-3 py-2.5 text-sm font-medium text-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-1"
+                  [style.--tw-ring-color]="'var(--theme-ring)'" [style.border-color]="fromDropdownOpen() ? 'var(--theme-accent)' : ''"
+                  aria-haspopup="true" [attr.aria-expanded]="fromDropdownOpen()"
+                  #fromDropdownTrigger>
                   @if (fromCurrencyData(); as currency) {
                     <div class="flex items-center truncate">
                       @if (currency.flagCode) {
                         <img [src]="'https://flagcdn.com/w20/' + currency.flagCode + '.png'" [alt]="currency.code" class="w-5 h-auto me-2 object-contain rounded-sm"/>
                       } @else {
-                        <div class="w-5 h-5 me-2 flex-shrink-0 flex items-center justify-center bg-gray-600 rounded-sm text-xs">?</div>
+                        <div class="w-5 h-5 me-2 flex-shrink-0 flex items-center justify-center bg-gray-300 dark:bg-gray-600 rounded-sm text-xs">?</div>
                       }
                       <span class="truncate">{{ currency.code }}</span>
                     </div>
                   }
-                  <svg class="w-4 h-4 ms-2 -me-1 text-gray-400 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <svg class="w-4 h-4 ms-2 -me-1 text-gray-500 dark:text-gray-400 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
                   </svg>
                 </button>
@@ -69,43 +71,46 @@
                   type="text"
                   inputmode="decimal"
                   id="fromAmount"
-                  class="relative z-0 block w-full min-w-0 flex-1 rounded-e-lg border border-gray-600 bg-gray-900 px-3 py-2.5 text-white placeholder-gray-500 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 text-right"
-                  [value]="formattedFromAmount()"
+                  class="relative z-0 block w-full min-w-0 flex-1 rounded-e-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 px-3 py-2.5 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-1 text-right"
+                  [style.--tw-ring-color]="'var(--theme-ring)'" [style.border-color]="fromDropdownOpen() ? 'var(--theme-accent)' : ''"
+                  [value]="fromAmountDisplay()"
                   (input)="onFromAmountChange($event)"
+                  (keydown)="onAmountKeyDown($event)"
                   placeholder="1.00">
               </div>
 
               <!-- Dropdown Menu -->
               @if (fromDropdownOpen()) {
-                <div class="origin-top-start absolute start-0 mt-2 w-72 rounded-md shadow-lg bg-gray-700 ring-1 ring-black ring-opacity-5 focus:outline-none z-50 max-h-48 md:max-h-60 overflow-y-auto">
+                <div class="origin-top-start absolute start-0 mt-2 w-72 rounded-md shadow-lg bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 focus:outline-none z-50 max-h-48 md:max-h-60 overflow-y-auto" #fromDropdownPanel>
                   <div class="py-1" role="menu" aria-orientation="vertical">
                     @for(currency of currencies(); track currency.code) {
                       <a 
                         href="#"
-                        class="flex items-center px-4 py-1 text-sm text-gray-200 hover:bg-gray-600 hover:text-white"
-                        [class.bg-sky-600]="currency.code === fromCurrency()"
+                        class="flex items-center px-4 py-1 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-gray-900 dark:hover:text-white"
+                        [class.themed-bg-selected]="currency.code === fromCurrency()"
+                        [class.text-white]="currency.code === fromCurrency()"
                         role="menuitem"
                         (click)="selectFromCurrency(currency.code, $event)">
                         @if (currency.flagCode) {
                           <img [src]="'https://flagcdn.com/w40/' + currency.flagCode + '.png'" [alt]="currency.code" class="w-6 h-auto me-3 object-contain"/>
                         } @else {
-                          <div class="w-6 h-5 me-3 flex-shrink-0 flex items-center justify-center bg-gray-600 text-xs">?</div>
+                          <div class="w-6 h-5 me-3 flex-shrink-0 flex items-center justify-center bg-gray-500 dark:bg-gray-600 text-xs text-white">?</div>
                         }
                         <span class="font-medium">{{ currency.code }}</span>
-                        <span class="text-gray-400 ms-2 truncate">{{ currency.name }}</span>
+                        <span class="text-gray-500 dark:text-gray-400 ms-2 truncate">{{ currency.name }}</span>
                       </a>
                     }
                   </div>
                 </div>
               }
             </div>
-            <p class="text-xs text-gray-400 mt-1.5 h-4 px-1 truncate">{{ fromCurrencyFullName() }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1.5 h-4 px-1 truncate">{{ fromCurrencyFullName() }}</p>
           </div>
 
           <!-- Swap Button (Desktop) -->
           <div class="hidden md:flex flex-shrink-0 mt-2 md:mt-6">
-            <button (click)="swapCurrencies()" class="p-3 bg-gray-700 rounded-full hover:bg-sky-500 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:ring-offset-2 focus:ring-offset-gray-800">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <button (click)="swapCurrencies()" class="p-3 bg-gray-200 dark:bg-gray-700 rounded-full themed-bg-hover transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-800" [style.--tw-ring-color]="'var(--theme-ring)'">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-600 dark:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
               </svg>
             </button>
@@ -113,26 +118,28 @@
 
           <!-- To Amount (Result) -->
           <div class="w-full">
-            <label for="toAmount" class="block text-sm font-medium text-gray-400 mb-1.5">{{ 'CONVERTED_AMOUNT' | translate }}</label>
+            <label for="toAmount" class="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1.5">{{ 'CONVERTED_AMOUNT' | translate }}</label>
             <div class="relative">
               <div class="flex">
                 <!-- Custom Currency Dropdown Button -->
                 <button 
                   type="button" 
                   (click)="toggleToDropdown()"
-                  class="z-10 flex items-center justify-between w-28 flex-shrink-0 cursor-pointer appearance-none rounded-s-lg border border-gray-600 bg-gray-700 px-3 py-2.5 text-sm font-medium text-white hover:bg-gray-600 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
-                  aria-haspopup="true" [attr.aria-expanded]="toDropdownOpen()">
+                  class="z-10 flex items-center justify-between w-28 flex-shrink-0 cursor-pointer appearance-none rounded-s-lg border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 px-3 py-2.5 text-sm font-medium text-gray-800 dark:text-white hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-1"
+                  [style.--tw-ring-color]="'var(--theme-ring)'" [style.border-color]="toDropdownOpen() ? 'var(--theme-accent)' : ''"
+                  aria-haspopup="true" [attr.aria-expanded]="toDropdownOpen()"
+                  #toDropdownTrigger>
                   @if (toCurrencyData(); as currency) {
                     <div class="flex items-center truncate">
                       @if (currency.flagCode) {
                         <img [src]="'https://flagcdn.com/w20/' + currency.flagCode + '.png'" [alt]="currency.code" class="w-5 h-auto me-2 object-contain rounded-sm"/>
                       } @else {
-                        <div class="w-5 h-5 me-2 flex-shrink-0 flex items-center justify-center bg-gray-600 rounded-sm text-xs">?</div>
+                        <div class="w-5 h-5 me-2 flex-shrink-0 flex items-center justify-center bg-gray-300 dark:bg-gray-600 rounded-sm text-xs">?</div>
                       }
                       <span class="truncate">{{ currency.code }}</span>
                     </div>
                   }
-                  <svg class="w-4 h-4 ms-2 -me-1 text-gray-400 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <svg class="w-4 h-4 ms-2 -me-1 text-gray-500 dark:text-gray-400 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                     <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
                   </svg>
                 </button>
@@ -140,48 +147,200 @@
                   type="text"
                   inputmode="decimal"
                   id="toAmount"
-                  class="relative z-0 block w-full min-w-0 flex-1 rounded-e-lg border border-gray-600 bg-gray-900 px-3 py-2.5 text-white placeholder-gray-500 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500 text-right"
-                  [value]="formattedToAmount()"
-                  (input)="onToAmountChange($event)">
+                  class="relative z-0 block w-full min-w-0 flex-1 rounded-e-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 px-3 py-2.5 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-1 text-right"
+                  [style.--tw-ring-color]="'var(--theme-ring)'" [style.border-color]="toDropdownOpen() ? 'var(--theme-accent)' : ''"
+                  [value]="toAmountDisplay()"
+                  (input)="onToAmountChange($event)"
+                  (keydown)="onAmountKeyDown($event)">
               </div>
                <!-- Dropdown Menu -->
               @if (toDropdownOpen()) {
-                <div class="origin-top-start absolute start-0 mt-2 w-72 rounded-md shadow-lg bg-gray-700 ring-1 ring-black ring-opacity-5 focus:outline-none z-50 max-h-48 md:max-h-60 overflow-y-auto">
+                <div class="origin-top-start absolute start-0 mt-2 w-72 rounded-md shadow-lg bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 focus:outline-none z-50 max-h-48 md:max-h-60 overflow-y-auto" #toDropdownPanel>
                   <div class="py-1" role="menu" aria-orientation="vertical">
                     @for(currency of currencies(); track currency.code) {
                       <a 
                         href="#"
-                        class="flex items-center px-4 py-1 text-sm text-gray-200 hover:bg-gray-600 hover:text-white"
-                        [class.bg-sky-600]="currency.code === toCurrency()"
+                        class="flex items-center px-4 py-1 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-gray-900 dark:hover:text-white"
+                        [class.themed-bg-selected]="currency.code === toCurrency()"
+                        [class.text-white]="currency.code === toCurrency()"
                         role="menuitem"
                         (click)="selectToCurrency(currency.code, $event)">
                         @if (currency.flagCode) {
                           <img [src]="'https://flagcdn.com/w40/' + currency.flagCode + '.png'" [alt]="currency.code" class="w-6 h-auto me-3 object-contain"/>
                         } @else {
-                          <div class="w-6 h-5 me-3 flex-shrink-0 flex items-center justify-center bg-gray-600 text-xs">?</div>
+                          <div class="w-6 h-5 me-3 flex-shrink-0 flex items-center justify-center bg-gray-500 dark:bg-gray-600 text-xs text-white">?</div>
                         }
                         <span class="font-medium">{{ currency.code }}</span>
-                        <span class="text-gray-400 ms-2 truncate">{{ currency.name }}</span>
+                        <span class="text-gray-500 dark:text-gray-400 ms-2 truncate">{{ currency.name }}</span>
                       </a>
                     }
                   </div>
                 </div>
               }
             </div>
-            <p class="text-xs text-gray-400 mt-1.5 h-4 px-1 truncate">{{ toCurrencyFullName() }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1.5 h-4 px-1 truncate">{{ toCurrencyFullName() }}</p>
           </div>
         </div>
       </div>
 
       <!-- Footer Info -->
-      <div class="text-center text-gray-500 text-xs mt-8">
+      <div class="text-center text-gray-400 dark:text-gray-500 text-xs mt-8">
         <p>
           {{ 'RATE_PREFIX' | translate }} {{ fromCurrency() }} {{ 'RATE_EQUALS' | translate }}
-          {{ singleUnitRate() | number:'1.4-6':languageService.currentLocaleId() }} 
+          {{ singleUnitRate() | number:'1.4-6':effectiveLocale() }} 
           {{ toCurrency() }}
         </p>
-        <p class="mt-1">{{ 'LAST_UPDATED' | translate }} {{ lastUpdated() | date:'medium':'':languageService.currentLocaleId() }}</p>
+        <p class="mt-1">{{ 'LAST_UPDATED' | translate }} {{ lastUpdated() | date:'medium':'':effectiveLocale() }}</p>
       </div>
     }
+    
+    <!-- Action Buttons & Popovers -->
+    <div class="absolute bottom-4 flex items-end gap-2" [class.end-4]="!languageService.isRtl()" [class.start-4]="languageService.isRtl()">
+      <!-- Shortcuts Button & Popover (Desktop only) -->
+      <div class="relative hidden md:block">
+        <button 
+          (click)="isShortcutsOpen.set(!isShortcutsOpen())" 
+          class="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 themed-bg-hover flex items-center justify-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-800"
+          [style.--tw-ring-color]="'var(--theme-ring)'"
+          [attr.aria-label]="'ARIA_LABEL_SHORTCUTS' | translate"
+          #shortcutsButton>
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-600 dark:text-white" viewBox="0 0 256 256" [style.fill]="'var(--theme-accent)'"><path d="M240,88H16a8,8,0,0,0-8,8V184a8,8,0,0,0,8,8H240a8,8,0,0,0,8-8V96A8,8,0,0,0,240,88Zm-101.4,88h-33.2a8,8,0,0,1,0-16h33.2a8,8,0,0,1,0,16Zm64,0H160a8,8,0,0,1-8-8V160a8,8,0,0,1,8-8h34.6a8,8,0,0,1,0,16H168v8A8,8,0,0,1,160,176Zm0-40H160a8,8,0,0,1,0-16h42.6a8,8,0,0,1,0,16Zm-120-8a8,8,0,0,1-8,8H32a8,8,0,0,1-8-8V120a8,8,0,0,1,8-8H74.6a8,8,0,0,1,0,16H40v8A8,8,0,0,1,32,128Zm16-16H32a8,8,0,0,1,0-16H82.6a8,8,0,0,1,0,16Zm40,0H96a8,8,0,0,1,0-16h34.6a8,8,0,0,1,0,16Zm40,0H136a8,8,0,0,1,0-16h34.6a8,8,0,0,1,0,16Zm48,0H184a8,8,0,0,1,0-16h34.6a8,8,0,0,1,0,16Z"/></svg>
+        </button>
+        @if (isShortcutsOpen()) {
+          <div class="absolute bottom-full mb-2 w-72 rounded-lg shadow-lg bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 p-3 z-50 text-sm text-gray-800 dark:text-white"
+               [class.end-0]="!languageService.isRtl()"
+               [class.start-0]="languageService.isRtl()"
+               #shortcutsPanel>
+            <h4 class="font-semibold mb-2 px-1">{{ 'SHORTCUTS_TITLE' | translate }}</h4>
+            <ul class="space-y-1 text-xs text-gray-600 dark:text-gray-300">
+                <li class="flex justify-between items-center px-1">
+                    <span>{{ 'SHORTCUT_SWAP' | translate }}</span>
+                    <kbd class="font-sans px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-md dark:bg-gray-600 dark:text-gray-100 dark:border-gray-500">Alt + S</kbd>
+                </li>
+                <li class="flex justify-between items-center px-1">
+                    <span>{{ 'SHORTCUT_FOCUS_FROM' | translate }}</span>
+                    <kbd class="font-sans px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-md dark:bg-gray-600 dark:text-gray-100 dark:border-gray-500">Alt + F</kbd>
+                </li>
+                <li class="flex justify-between items-center px-1">
+                    <span>{{ 'SHORTCUT_FOCUS_TO' | translate }}</span>
+                    <kbd class="font-sans px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-md dark:bg-gray-600 dark:text-gray-100 dark:border-gray-500">Alt + T</kbd>
+                </li>
+                <li class="flex justify-between items-center px-1">
+                    <span>{{ 'SHORTCUT_OPEN_SETTINGS' | translate }}</span>
+                    <kbd class="font-sans px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-md dark:bg-gray-600 dark:text-gray-100 dark:border-gray-500">Alt + O</kbd>
+                </li>
+                <li class="flex justify-between items-center px-1">
+                    <span>{{ 'SHORTCUT_OPEN_SHORTCUTS' | translate }}</span>
+                    <kbd class="font-sans px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-md dark:bg-gray-600 dark:text-gray-100 dark:border-gray-500">Alt + K</kbd>
+                </li>
+                 <li class="flex justify-between items-center px-1">
+                    <span>{{ 'SHORTCUT_OPEN_FROM_DROPDOWN' | translate }}</span>
+                    <kbd class="font-sans px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-md dark:bg-gray-600 dark:text-gray-100 dark:border-gray-500">Alt + ↑</kbd>
+                </li>
+                 <li class="flex justify-between items-center px-1">
+                    <span>{{ 'SHORTCUT_OPEN_TO_DROPDOWN' | translate }}</span>
+                    <kbd class="font-sans px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-md dark:bg-gray-600 dark:text-gray-100 dark:border-gray-500">Alt + ↓</kbd>
+                </li>
+                <li class="flex justify-between items-center px-1">
+                    <span>{{ 'SHORTCUT_CLOSE' | translate }}</span>
+                    <kbd class="font-sans px-2 py-1 text-xs font-semibold text-gray-800 bg-gray-100 border border-gray-200 rounded-md dark:bg-gray-600 dark:text-gray-100 dark:border-gray-500">Esc</kbd>
+                </li>
+            </ul>
+          </div>
+        }
+      </div>
+
+      <!-- Settings Button and Popover -->
+      <div class="relative">
+        <button 
+          (click)="isSettingsOpen.set(!isSettingsOpen())" 
+          class="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 themed-bg-hover flex items-center justify-center transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-800"
+          [style.--tw-ring-color]="'var(--theme-ring)'"
+          aria-label="Settings"
+          #settingsButton>
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-600 dark:text-white" viewBox="0 0 256 256" [style.fill]="'var(--theme-accent)'"><path d="M216.7,113.2a93.2,93.2,0,0,0-23-23l14.1-24.5a8,8,0,0,0-4-10.8l-32-18.5a8,8,0,0,0-10.8,4L147,65a93.2,93.2,0,0,0-23-2.2L121.8,39a8,8,0,0,0-7.5-6h-37a8,8,0,0,0-7.5,6L67,62.8a93.2,93.2,0,0,0-23,2.2L30,39.5a8,8,0,0,0-10.8-4l-32,18.5a8,8,0,0,0-4,10.8L-2.7,89.3a8,8,0,0,0,2.8,9.7L14.2,113a93.2,93.2,0,0,0,0,30L-2.7,157.2a8,8,0,0,0-2.8,9.7l16.1,27.8a8,8,0,0,0,9.7,2.8l24.5-14.1a93.2,93.2,0,0,0,23,23L65,221a8,8,0,0,0,4,10.8l32,18.5a8,8,0,0,0,10.8-4L125,221.8a93.2,93.2,0,0,0,23,2.2l2.2,23.8a8,8,0,0,0,7.5,6h37a8,8,0,0,0,7.5-6l2.2-23.8a93.2,93.2,0,0,0,23-2.2l24.5,14.1a8,8,0,0,0,10.8-4l32-18.5a8,8,0,0,0,4-10.8l-14.1-24.5a93.2,93.2,0,0,0,23-23l14.1,24.5a8,8,0,0,0,10.8-4l18.5-32a8,8,0,0,0-4-10.8Zm-88.7,78.8a68,68,0,1,1,68-68A68.1,68.1,0,0,1,128,192Z" transform="translate(35.9 0.5)"></path></svg>
+        </button>
+
+        @if (isSettingsOpen()) {
+          <div class="absolute bottom-full mb-2 w-72 rounded-lg shadow-lg bg-white dark:bg-gray-700 ring-1 ring-black ring-opacity-5 p-3 z-50 text-sm text-gray-800 dark:text-white"
+               [class.end-0]="!languageService.isRtl()"
+               [class.start-0]="languageService.isRtl()"
+               #settingsPanel>
+            <h4 class="font-semibold mb-2 px-1">{{ 'SETTINGS_NUMBER_FORMAT' | translate }}</h4>
+            <div class="flex flex-col gap-1">
+              <button
+                (click)="setFormattingLocale(null)"
+                class="w-full text-start px-3 py-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600"
+                [class.themed-bg-selected]="!formattingLocale()"
+                [class.text-white]="!formattingLocale()">
+                Auto ({{ 'LANGUAGE_DEFAULT' | translate }})
+              </button>
+              <button
+                (click)="setFormattingLocale('en-US')"
+                class="w-full text-start px-3 py-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600"
+                [class.themed-bg-selected]="formattingLocale() === 'en-US'"
+                [class.text-white]="formattingLocale() === 'en-US'">
+                <span class="font-mono">1,234.56</span>
+                <span class="text-gray-500 dark:text-gray-400 text-xs"> (US/UK)</span>
+              </button>
+              <button
+                (click)="setFormattingLocale('de-DE')"
+                class="w-full text-start px-3 py-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600"
+                [class.themed-bg-selected]="formattingLocale() === 'de-DE'"
+                [class.text-white]="formattingLocale() === 'de-DE'">
+                <span class="font-mono">1.234,56</span>
+                <span class="text-gray-500 dark:text-gray-400 text-xs"> (Europe)</span>
+              </button>
+            </div>
+            
+            <!-- Appearance Setting -->
+            <h4 class="font-semibold mt-4 mb-2 px-1">{{ 'SETTINGS_APPEARANCE' | translate }}</h4>
+            <div class="flex flex-col gap-1">
+               <button
+                (click)="themeService.setDisplayMode('auto')"
+                class="flex items-center justify-start gap-3 w-full text-start px-3 py-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600"
+                [class.themed-bg-selected]="themeService.displayMode() === 'auto'"
+                [class.text-white]="themeService.displayMode() === 'auto'">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M7 3a1 1 0 000 2h6a1 1 0 100-2H7zM4 7a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM2 11a2 2 0 012-2h12a2 2 0 012 2v4a2 2 0 01-2 2H4a2 2 0 01-2-2v-4z" /></svg>
+                <span>{{ 'SETTINGS_AUTO_MODE' | translate }}</span>
+              </button>
+              <button
+                (click)="themeService.setDisplayMode('light')"
+                class="flex items-center justify-start gap-3 w-full text-start px-3 py-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600"
+                [class.themed-bg-selected]="themeService.displayMode() === 'light'"
+                [class.text-white]="themeService.displayMode() === 'light'">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 2a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 2zM5.22 5.22a.75.75 0 011.06 0l1.06 1.06a.75.75 0 01-1.06 1.06l-1.06-1.06a.75.75 0 010-1.06zM2 10a.75.75 0 01.75-.75h1.5a.75.75 0 010 1.5h-1.5A.75.75 0 012 10zm10.06 4.78a.75.75 0 010 1.06l-1.06 1.06a.75.75 0 11-1.06-1.06l1.06-1.06a.75.75 0 011.06 0zM17.25 10a.75.75 0 01-.75.75h-1.5a.75.75 0 010 1.5h1.5a.75.75 0 01.75.75zM14.78 5.22a.75.75 0 010 1.06l-1.06 1.06a.75.75 0 01-1.06-1.06l1.06-1.06a.75.75 0 011.06 0zM12.06 14.78a.75.75 0 011.06 0l1.06 1.06a.75.75 0 01-1.06 1.06l-1.06-1.06a.75.75 0 010-1.06zM10 15.25a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5a.75.75 0 01.75-.75zM10 5a5 5 0 100 10 5 5 0 000-10z" clip-rule="evenodd" /></svg>
+                <span>{{ 'SETTINGS_LIGHT_MODE' | translate }}</span>
+              </button>
+              <button
+                (click)="themeService.setDisplayMode('dark')"
+                class="flex items-center justify-start gap-3 w-full text-start px-3 py-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600"
+                [class.themed-bg-selected]="themeService.displayMode() === 'dark'"
+                [class.text-white]="themeService.displayMode() === 'dark'">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M7.455 2.104a.75.75 0 00-.965.524 8.5 8.5 0 009.9 9.9.75.75 0 00.524-.965A7.002 7.002 0 0118 10a7 7 0 01-7-7c0-1.423.42-2.74 1.14-3.866.086-.16.17-.318.26-.474a.75.75 0 00-.95-.524z" /><path d="M12.23 15.82a.75.75 0 00.965-.524 8.5 8.5 0 00-9.9-9.9.75.75 0 00-.524.965 7.002 7.002 0 01-1.14 3.866c-.086.16-.17.318-.26.474a.75.75 0 00.95.524 7 7 0 017 7c1.423 0 2.74-.42 3.866-1.14.16-.086.318-.17.474-.26z" /></svg>
+                <span>{{ 'SETTINGS_DARK_MODE' | translate }}</span>
+              </button>
+            </div>
+
+            <h4 class="font-semibold mt-4 mb-2 px-1">{{ 'SETTINGS_THEME_COLOR' | translate }}</h4>
+            <div class="grid grid-cols-5 gap-2 px-1">
+              @for(theme of themeService.themes; track theme.key) {
+                 <button 
+                    (click)="setTheme(theme.key)"
+                    [attr.aria-label]="theme.name"
+                    class="w-8 h-8 rounded-full border-2 border-transparent transition-transform transform hover:scale-110 focus:outline-none"
+                    [class.ring-2]="theme.key === themeService.currentThemeKey()"
+                    [class.ring-offset-2]="theme.key === themeService.currentThemeKey()"
+                    [class.ring-offset-white]="theme.key === themeService.currentThemeKey()"
+                    [class.dark:ring-offset-gray-700]="theme.key === themeService.currentThemeKey()"
+                    [style.background-color]="theme.colors.accent"
+                    [style.ring-color]="theme.colors.ring">
+                </button>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </div>
   </div>
 </main>

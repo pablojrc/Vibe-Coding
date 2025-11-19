@@ -1,10 +1,11 @@
-import { Component, OnInit, ChangeDetectionStrategy, signal, computed, inject, WritableSignal, Signal, effect, ElementRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectionStrategy, signal, computed, inject, WritableSignal, Signal, effect, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule, DecimalPipe } from '@angular/common';
 import { ReactiveFormsModule } from '@angular/forms';
 import { CurrencyService, Currency } from './services/currency.service';
 import { PersistenceService } from './services/persistence.service';
 import { LanguageService } from './services/language.service';
 import { LocationService } from './services/location.service';
+import { ThemeService } from './services/theme.service';
 import { SpinnerComponent } from './components/spinner/spinner.component';
 import { LanguageSwitcherComponent } from './components/language-switcher/language-switcher.component';
 import { TranslatePipe } from './pipes/translate.pipe';
@@ -17,6 +18,7 @@ import { TranslatePipe } from './pipes/translate.pipe';
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     '(document:click)': 'onClickOutside($event)',
+    '(document:keydown)': 'handleKeyboardShortcuts($event)',
   }
 })
 export class AppComponent implements OnInit {
@@ -24,9 +26,20 @@ export class AppComponent implements OnInit {
   private persistenceService = inject(PersistenceService);
   private locationService = inject(LocationService);
   languageService = inject(LanguageService);
-  private elementRef = inject(ElementRef);
+  themeService = inject(ThemeService);
 
   private readonly REFRESH_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
+
+
+  // --- Element References for Click Outside Logic ---
+  @ViewChild('fromDropdownTrigger') fromDropdownTrigger?: ElementRef;
+  @ViewChild('fromDropdownPanel') fromDropdownPanel?: ElementRef;
+  @ViewChild('toDropdownTrigger') toDropdownTrigger?: ElementRef;
+  @ViewChild('toDropdownPanel') toDropdownPanel?: ElementRef;
+  @ViewChild('settingsButton') settingsButton?: ElementRef;
+  @ViewChild('settingsPanel') settingsPanel?: ElementRef;
+  @ViewChild('shortcutsButton') shortcutsButton?: ElementRef;
+  @ViewChild('shortcutsPanel') shortcutsPanel?: ElementRef;
 
 
   // --- Signals for State Management ---
@@ -37,11 +50,21 @@ export class AppComponent implements OnInit {
   
   fromAmount: WritableSignal<number> = signal(1);
   toAmount: WritableSignal<number> = signal(0);
+  fromAmountDisplay: WritableSignal<string> = signal('1');
+  toAmountDisplay: WritableSignal<string> = signal('');
+
   fromCurrency: WritableSignal<string> = signal('');
   toCurrency: WritableSignal<string> = signal('');
 
   fromDropdownOpen = signal(false);
   toDropdownOpen = signal(false);
+  isSettingsOpen = signal(false);
+  isShortcutsOpen = signal(false);
+
+  // --- Formatting & Locale Signals ---
+  formattingLocale: WritableSignal<string | null> = signal(this.persistenceService.getItem('userFormattingLocale'));
+  effectiveLocale: Signal<string> = computed(() => this.formattingLocale() ?? this.languageService.currentLocaleId());
+
 
   // --- Computed Signals for Derived State ---
   fromCurrencyData: Signal<Currency | undefined> = computed(() => 
@@ -51,9 +74,6 @@ export class AppComponent implements OnInit {
     this.currencies().find(c => c.code === this.toCurrency())
   );
   
-  formattedFromAmount: Signal<string> = computed(() => this.formatAmount(this.fromAmount()));
-  formattedToAmount: Signal<string> = computed(() => this.formatAmount(this.toAmount()));
-
   singleUnitRate: Signal<number> = computed(() => {
     const rates = this.currencies();
     if (rates.length === 0) return 0;
@@ -94,6 +114,7 @@ export class AppComponent implements OnInit {
 
   constructor() {
     this.languageService.init();
+    this.themeService.init();
     
     // Effect to persist currency selections
     effect(() => {
@@ -105,11 +126,31 @@ export class AppComponent implements OnInit {
         }
     });
 
+    // Effect to persist the last entered amount
+    effect(() => {
+      const amount = this.fromAmount();
+      if (this.currencies().length > 0 && !isNaN(amount)) {
+        this.persistenceService.setItem('lastAmount', amount);
+      }
+    });
+
     // Effect to handle document direction (LTR/RTL)
     effect(() => {
       const isRtl = this.languageService.isRtl();
       document.documentElement.lang = this.languageService.currentLanguageCode();
       document.documentElement.dir = isRtl ? 'rtl' : 'ltr';
+    });
+
+    // Effect to auto-update number formats when language changes and format is "Auto"
+    effect(() => {
+        // When the UI language changes, re-format the numbers
+        // ONLY if the user has not selected a specific number format override.
+        this.languageService.currentLanguageCode(); // Establish dependency
+        if (this.formattingLocale() === null) {
+            // Re-format both displayed amounts to match the new language's default format.
+            this.fromAmountDisplay.set(this.formatAmount(this.fromAmount()));
+            this.toAmountDisplay.set(this.formatAmount(this.toAmount()));
+        }
     });
   }
 
@@ -142,13 +183,19 @@ export class AppComponent implements OnInit {
         }
       }
 
-      // 3. Set all state signals together.
+      // 3. Determine initial amount
+      const savedAmount = this.persistenceService.getItem<number>('lastAmount');
+      const initialAmount = (savedAmount !== null && !isNaN(savedAmount) && savedAmount > 0) ? savedAmount : 1;
+
+      // 4. Set all state signals together.
       this.currencies.set(rates);
       this.fromCurrency.set(initialFrom);
       this.toCurrency.set(initialTo);
+      this.fromAmount.set(initialAmount);
       this.lastUpdated.set(new Date());
 
-      // 4. Perform the initial conversion calculation.
+      // 5. Perform the initial conversion calculation and set display values.
+      this.fromAmountDisplay.set(this.formatAmount(initialAmount));
       this.updateToAmount();
 
     } catch (err) {
@@ -165,24 +212,46 @@ export class AppComponent implements OnInit {
       this.currencies.set(rates);
       this.lastUpdated.set(new Date());
       this.updateToAmount(); // Recalculate with new rates
+      this.toAmountDisplay.set(this.formatAmount(this.toAmount()));
     } catch (err) {
       console.error('Failed to auto-refresh currency rates:', err);
     }
   }
 
+  private parseInputAsNumber(value: string): number {
+    // Sanitize to only keep numbers and the first decimal separator (commas or period).
+    let sanitized = value.replace(/[^0-9.,]/g, '');
+
+    const separatorMatch = sanitized.match(/[.,]/);
+    if (separatorMatch) {
+      const firstSeparatorIndex = separatorMatch.index!;
+      const integerPart = sanitized.substring(0, firstSeparatorIndex).replace(/[.,]/g, '');
+      const fractionalPart = sanitized.substring(firstSeparatorIndex + 1).replace(/[.,]/g, '');
+      sanitized = `${integerPart}.${fractionalPart}`;
+    } else {
+      sanitized = sanitized.replace(/[.,]/g, '');
+    }
+
+    return parseFloat(sanitized) || 0;
+  }
+
   private formatAmount(amount: number): string {
-    // Using 'en-US' locale to guarantee '.' for decimal and ',' for thousands.
+    const locale = this.effectiveLocale();
+
+    // For values less than 1, show more precision to avoid displaying 0.00 for small amounts.
     if (amount !== 0 && Math.abs(amount) < 1) {
-      return new Intl.NumberFormat('en-US', {
+      return new Intl.NumberFormat(locale, {
         useGrouping: true,
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 12,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 8,
       }).format(amount);
     }
-    return new Intl.NumberFormat('en-US', {
+
+    // For larger values, format with 2 decimal places, which is standard for most currencies.
+    return new Intl.NumberFormat(locale, {
       useGrouping: true,
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 4,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(amount);
   }
 
@@ -204,6 +273,7 @@ export class AppComponent implements OnInit {
     const amount = this.fromAmount();
     const result = (amount / fromRate) * toRate;
     this.toAmount.set(result);
+    this.toAmountDisplay.set(this.formatAmount(result));
   }
 
   private updateFromAmount(): void {
@@ -224,21 +294,65 @@ export class AppComponent implements OnInit {
     const amount = this.toAmount();
     const result = (amount / toRate) * fromRate;
     this.fromAmount.set(result);
+    this.fromAmountDisplay.set(this.formatAmount(result));
+  }
+  
+  onAmountKeyDown(event: KeyboardEvent): void {
+    const allowedKeys = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'];
+    if (allowedKeys.includes(event.key)) { return; }
+
+    if ((event.ctrlKey || event.metaKey) && ['a', 'c', 'v', 'x', 'z'].includes(event.key.toLowerCase())) { return; }
+
+    const input = event.target as HTMLInputElement;
+    const currentValue = input.value;
+
+    if (event.key === '.' || event.key === ',') {
+      const hasDecimal = /[.,]/.test(currentValue);
+      if (hasDecimal) {
+        event.preventDefault();
+      }
+      return;
+    }
+
+    if (!/^\d$/.test(event.key)) {
+      event.preventDefault();
+    }
   }
 
 
   onFromAmountChange(event: Event): void {
     const value = (event.target as HTMLInputElement).value;
-    const sanitizedValue = value.replace(/,/g, '');
-    this.fromAmount.set(parseFloat(sanitizedValue) || 0);
+    this.fromAmountDisplay.set(value);
+    this.fromAmount.set(this.parseInputAsNumber(value));
     this.updateToAmount();
   }
 
   onToAmountChange(event: Event): void {
     const value = (event.target as HTMLInputElement).value;
-    const sanitizedValue = value.replace(/,/g, '');
-    this.toAmount.set(parseFloat(sanitizedValue) || 0);
+    this.toAmountDisplay.set(value);
+    this.toAmount.set(this.parseInputAsNumber(value));
     this.updateFromAmount();
+  }
+  
+  setFormattingLocale(locale: string | null): void {
+    this.formattingLocale.set(locale);
+    if (locale) {
+      this.persistenceService.setItem('userFormattingLocale', locale);
+    } else {
+      this.persistenceService.removeItem('userFormattingLocale');
+    }
+    this.isSettingsOpen.set(false);
+    
+    // Defer re-formatting to ensure all state changes have propagated before re-calculating display values.
+    // This resolves a potential timing issue where one input field might not update correctly.
+    setTimeout(() => {
+        this.fromAmountDisplay.set(this.formatAmount(this.fromAmount()));
+        this.toAmountDisplay.set(this.formatAmount(this.toAmount()));
+    }, 0);
+  }
+
+  setTheme(key: string): void {
+    this.themeService.setTheme(key);
   }
 
   toggleFromDropdown(): void {
@@ -270,9 +384,26 @@ export class AppComponent implements OnInit {
   }
 
   onClickOutside(event: Event): void {
-    if (!this.elementRef.nativeElement.contains(event.target)) {
+    const target = event.target as Node;
+
+    // Close "from" currency dropdown if click is outside
+    if (this.fromDropdownOpen() && !this.fromDropdownTrigger?.nativeElement.contains(target) && !this.fromDropdownPanel?.nativeElement.contains(target)) {
       this.fromDropdownOpen.set(false);
+    }
+
+    // Close "to" currency dropdown if click is outside
+    if (this.toDropdownOpen() && !this.toDropdownTrigger?.nativeElement.contains(target) && !this.toDropdownPanel?.nativeElement.contains(target)) {
       this.toDropdownOpen.set(false);
+    }
+    
+    // Close settings popover if click is outside
+    if (this.isSettingsOpen() && !this.settingsButton?.nativeElement.contains(target) && !this.settingsPanel?.nativeElement.contains(target)) {
+      this.isSettingsOpen.set(false);
+    }
+
+    // Close shortcuts popover if click is outside
+    if (this.isShortcutsOpen() && !this.shortcutsButton?.nativeElement.contains(target) && !this.shortcutsPanel?.nativeElement.contains(target)) {
+      this.isShortcutsOpen.set(false);
     }
   }
 
@@ -282,5 +413,62 @@ export class AppComponent implements OnInit {
     this.fromCurrency.set(currentTo);
     this.toCurrency.set(currentFrom);
     this.updateToAmount();
+  }
+
+  handleKeyboardShortcuts(event: KeyboardEvent): void {
+    // The Escape key closes any open modal/dropdown.
+    if (event.key === 'Escape') {
+      if (this.fromDropdownOpen() || this.toDropdownOpen() || this.isSettingsOpen() || this.isShortcutsOpen()) {
+        this.fromDropdownOpen.set(false);
+        this.toDropdownOpen.set(false);
+        this.isSettingsOpen.set(false);
+        this.isShortcutsOpen.set(false);
+        event.preventDefault();
+      }
+      return;
+    }
+
+    // All other shortcuts use the Alt key.
+    // We don't want to trigger them if a modifier like Ctrl or Meta is also pressed.
+    if (!event.altKey || event.ctrlKey || event.metaKey) {
+        return;
+    }
+
+    switch (event.key.toLowerCase()) {
+        case 's':
+            event.preventDefault();
+            this.swapCurrencies();
+            break;
+        case 'f': { // Use block scope for const
+            event.preventDefault();
+            const input = document.getElementById('fromAmount') as HTMLInputElement;
+            input?.focus();
+            input?.select();
+            break;
+        }
+        case 't': {
+            event.preventDefault();
+            const input = document.getElementById('toAmount') as HTMLInputElement;
+            input?.focus();
+            input?.select();
+            break;
+        }
+        case 'o':
+            event.preventDefault();
+            this.isSettingsOpen.update(v => !v);
+            break;
+        case 'k':
+            event.preventDefault();
+            this.isShortcutsOpen.update(v => !v);
+            break;
+        case 'arrowup':
+            event.preventDefault();
+            this.toggleFromDropdown();
+            break;
+        case 'arrowdown':
+            event.preventDefault();
+            this.toggleToDropdown();
+            break;
+    }
   }
 }
