@@ -293,7 +293,10 @@
                 class="w-full text-start px-3 py-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-600"
                 [class.themed-bg-selected]="!formattingLocale()"
                 [class.text-white]="!formattingLocale()">
-                Auto ({{ 'LANGUAGE_DEFAULT' | translate }})
+                <span>{{ 'SETTINGS_AUTO_MODE' | translate }}</span>
+                @if (!formattingLocale()) {
+                  <span class="text-gray-500 dark:text-gray-400 text-xs ps-1">(e.g., {{ autoDetectedFormatDisplay() }})</span>
+                }
               </button>
               <button
                 (click)="setFormattingLocale('en-US')"

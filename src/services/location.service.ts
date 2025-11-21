@@ -33,11 +33,16 @@ export class LocationService {
     'za': 'ZAR', 'zm': 'ZMW', 'zw': 'ZWL'
   };
 
+  // Set of country codes that typically use comma as a decimal separator.
+  private commaDecimalCountries: Set<string> = new Set([
+    'ad', 'al', 'ar', 'at', 'az', 'by', 'be', 'bo', 'ba', 'br', 'bg', 'cm', 'cl', 'co', 'cr', 'hr', 'cu', 'cy', 'cz', 'dk', 'do', 'ec', 'ee', 'fo', 'fi', 'fr', 'ge', 'de', 'gr', 'gl', 'gp', 'hu', 'is', 'id', 'it', 'kz', 'lv', 'lt', 'lu', 'mk', 'md', 'mn', 'me', 'nl', 'no', 'py', 'pe', 'pl', 'pt', 'ro', 'ru', 'rs', 'sk', 'si', 'es', 'se', 'tr', 'ua', 'uy', 'uz', 've', 'vn'
+  ]);
+
   /**
-   * Attempts to determine the user's currency based on their physical location.
-   * Returns a currency code (e.g., 'GBP') or null if it fails or is denied.
+   * Performs a single geolocation and reverse geocoding lookup.
+   * @returns The user's two-letter country code (e.g., 'us') or null.
    */
-  async getCurrencyFromGeolocation(): Promise<string | null> {
+  private async getCountryCodeFromGeolocation(): Promise<string | null> {
     if (!('geolocation' in navigator)) {
       return null;
     }
@@ -55,11 +60,7 @@ export class LocationService {
             }
             const data = await response.json();
             const countryCode = data?.address?.country_code?.toLowerCase();
-            if (countryCode && this.localeToCurrencyMap[countryCode]) {
-              resolve(this.localeToCurrencyMap[countryCode]);
-            } else {
-              resolve(null);
-            }
+            resolve(countryCode || null);
           } catch (error) {
             console.error('Reverse geocoding failed', error);
             resolve(null);
@@ -74,6 +75,35 @@ export class LocationService {
     });
   }
 
+  /**
+   * Gets all location-based information in a single, efficient call.
+   * @returns An object containing the local currency and number formatting locale.
+   */
+  async getGeoInfo(): Promise<{ currency: string | null; formattingLocale: string | null }> {
+    const countryCode = await this.getCountryCodeFromGeolocation();
+    
+    if (!countryCode) {
+      return { currency: null, formattingLocale: null };
+    }
+    
+    const currency = this.localeToCurrencyMap[countryCode] ?? null;
+    const formattingLocale = this.getFormattingLocaleFromCountryCode(countryCode);
+
+    return { currency, formattingLocale };
+  }
+
+  /**
+   * Determines the appropriate number formatting locale for a given country.
+   * @param countryCode The two-letter country code.
+   * @returns 'de-DE' for comma-decimal format, 'en-US' for period-decimal format.
+   */
+  private getFormattingLocaleFromCountryCode(countryCode: string): string {
+    return this.commaDecimalCountries.has(countryCode) ? 'de-DE' : 'en-US';
+  }
+
+  /**
+   * A fallback method to get currency from the browser's locale if geolocation is unavailable.
+   */
   getUserCurrency(): string {
     try {
       const userLang = navigator.language; // e.g., 'en-US' or 'es-ES'

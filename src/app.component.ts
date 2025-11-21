@@ -71,7 +71,26 @@ export class AppComponent implements OnInit {
 
   // --- Formatting & Locale Signals ---
   formattingLocale: WritableSignal<string | null> = signal(this.persistenceService.getItem('userFormattingLocale'));
-  effectiveLocale: Signal<string> = computed(() => this.formattingLocale() ?? this.languageService.currentLocaleId());
+  geoFormattingLocale: WritableSignal<string | null> = signal(null);
+
+  effectiveLocale: Signal<string> = computed(() => {
+    // 1. User's explicit choice has the highest priority.
+    if (this.formattingLocale()) {
+      return this.formattingLocale()!;
+    }
+    // 2. Geolocation-based format is the next priority.
+    if (this.geoFormattingLocale()) {
+      return this.geoFormattingLocale()!;
+    }
+    // 3. Fallback to the current UI language's default locale.
+    return this.languageService.currentLocaleId();
+  });
+
+  autoDetectedFormatDisplay: Signal<string> = computed(() => {
+    // Show the geo-detected format if available, otherwise fallback to the language's format.
+    const localeForDisplay = this.geoFormattingLocale() ?? this.languageService.currentLocaleId();
+    return new Intl.NumberFormat(localeForDisplay).format(1234.56);
+  });
 
 
   // --- Computed Signals for Derived State ---
@@ -189,10 +208,18 @@ export class AppComponent implements OnInit {
     this.loading.set(true);
     this.error.set(null);
     try {
-      // 1. Fetch all currency rates.
-      const rates = await this.currencyService.getRates();
+      // 1. Fetch currency rates and geo info in parallel for efficiency.
+      const [rates, geoInfo] = await Promise.all([
+        this.currencyService.getRates(),
+        this.locationService.getGeoInfo()
+      ]);
       
-      // 2. Determine initial currencies before setting signals to avoid race conditions.
+      // 2. Set formatting locale based on geo info *only if* user has no saved preference.
+      if (this.formattingLocale() === null) {
+        this.geoFormattingLocale.set(geoInfo.formattingLocale);
+      }
+
+      // 3. Determine initial currencies before setting signals to avoid race conditions.
       const allCodes = new Set(rates.map(r => r.code));
       const savedCurrencies = this.persistenceService.getItem<{ from: string, to: string }>('userCurrencies');
       
@@ -204,7 +231,7 @@ export class AppComponent implements OnInit {
         initialTo = savedCurrencies.to;
       } else {
         // Attempt to set currency based on geolocation first, then fall back to locale.
-        const geoCurrency = await this.locationService.getCurrencyFromGeolocation();
+        const geoCurrency = geoInfo.currency;
         let userCurrency: string | null = null;
         
         if (geoCurrency && allCodes.has(geoCurrency)) {
@@ -220,18 +247,18 @@ export class AppComponent implements OnInit {
         }
       }
 
-      // 3. Determine initial amount
+      // 4. Determine initial amount
       const savedAmount = this.persistenceService.getItem<number>('lastAmount');
       const initialAmount = (savedAmount !== null && !isNaN(savedAmount) && savedAmount > 0) ? savedAmount : 1;
 
-      // 4. Set all state signals together.
+      // 5. Set all state signals together.
       this.currencies.set(rates);
       this.fromCurrency.set(initialFrom);
       this.toCurrency.set(initialTo);
       this.fromAmount.set(initialAmount);
       this.lastUpdated.set(new Date());
 
-      // 5. Perform the initial conversion calculation and set display values.
+      // 6. Perform the initial conversion calculation and set display values.
       this.fromAmountDisplay.set(this.formatAmount(initialAmount));
       this.updateToAmount();
 
